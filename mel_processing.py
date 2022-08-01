@@ -6,6 +6,13 @@ from torch import nn
 import torch.nn.functional as F
 import torch.utils.data
 import numpy as np
+
+import logging
+
+numba_logger = logging.getLogger('numba')
+numba_logger.setLevel(logging.WARNING)
+import warnings
+warnings.filterwarnings('ignore')
 import librosa
 import librosa.util as librosa_util
 from librosa.util import normalize, pad_center, tiny
