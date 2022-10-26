@@ -44,7 +44,7 @@ def main():
 
   n_gpus = torch.cuda.device_count()
   os.environ['MASTER_ADDR'] = 'localhost'
-  os.environ['MASTER_PORT'] = '80000'
+  os.environ['MASTER_PORT'] = '8899'
 
   hps = utils.get_hparams()
   mp.spawn(run, nprocs=n_gpus, args=(n_gpus, hps,))
@@ -54,7 +54,7 @@ def run(rank, n_gpus, hps):
   global global_step
   if rank == 0:
     logger = utils.get_logger(hps.model_dir)
-    logger.info(hps)
+    print(hps) or logger.info(hps)
     utils.check_git_hash(hps.model_dir)
     writer = SummaryWriter(log_dir=hps.model_dir)
     writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
@@ -190,7 +190,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         loss_gen, losses_gen = generator_loss(y_d_hat_g)
         loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
     optim_g.zero_grad()
-    scaler.scale(loss_gen_all).backward()
+    scaler.scale(loss_gen_all.float()).backward()
     scaler.unscale_(optim_g)
     grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
     scaler.step(optim_g)
@@ -203,7 +203,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
           epoch,
           100. * batch_idx / len(train_loader)))
-        logger.info([x.item() for x in losses] + [global_step, lr])
+        print([x.item() for x in losses] + [global_step, lr]) or logger.info([x.item() for x in losses] + [global_step, lr])
         
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
         scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/dur": loss_dur, "loss/g/kl": loss_kl})
@@ -230,7 +230,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     global_step += 1
   
   if rank == 0:
-    logger.info('====> Epoch: {}'.format(epoch))
+    print('====> Epoch: {}'.format(epoch)) or logger.info('====> Epoch: {}'.format(epoch))
 
  
 def evaluate(hps, generator, eval_loader, writer_eval):

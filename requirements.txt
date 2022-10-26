@@ -8,7 +8,6 @@ tensorboard
 torch
 torchvision
 Unidecode
-pyopenjtalk
 jieba
 cn2an
 pypinyin

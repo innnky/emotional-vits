@@ -89,7 +89,7 @@ def process_func(
 #     wav, sr = librosa.load(f"{rootpath}/{wavname}", 16000)
 #     display(ipd.Audio(wav, rate=sr))
 
-rootpath = "/home/ubuntu/CVAEJETS/dataset/nene"
+rootpath = "dataset/nene"
 embs = []
 wavnames = []
 def extract_dir(path):
