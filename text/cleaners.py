@@ -1,203 +1,176 @@
-""" from https://github.com/keithito/tacotron """
-
-'''
-Cleaners are transformations that run over the input text at both training and eval time.
-
-Cleaners can be selected by passing a comma-delimited list of cleaner names as the "cleaners"
-hyperparameter. Some cleaners are English-specific. You'll typically want to use:
-  1. "english_cleaners" for English text
-  2. "transliteration_cleaners" for non-English text that can be transliterated to ASCII using
-     the Unidecode library (https://pypi.python.org/pypi/Unidecode)
-  3. "basic_cleaners" if you do not want to transliterate (in this case, you should also update
-     the symbols in symbols.py to match your data).
-'''
-
 import re
-from unidecode import unidecode
-import pyopenjtalk
-from janome.tokenizer import Tokenizer
-
-
-# Regular expression matching whitespace:
-_whitespace_re = re.compile(r'\s+')
-
-# List of (regular expression, replacement) pairs for abbreviations:
-_abbreviations = [(re.compile('\\b%s\\.' % x[0], re.IGNORECASE), x[1]) for x in [
-  ('mrs', 'misess'),
-  ('mr', 'mister'),
-  ('dr', 'doctor'),
-  ('st', 'saint'),
-  ('co', 'company'),
-  ('jr', 'junior'),
-  ('maj', 'major'),
-  ('gen', 'general'),
-  ('drs', 'doctors'),
-  ('rev', 'reverend'),
-  ('lt', 'lieutenant'),
-  ('hon', 'honorable'),
-  ('sgt', 'sergeant'),
-  ('capt', 'captain'),
-  ('esq', 'esquire'),
-  ('ltd', 'limited'),
-  ('col', 'colonel'),
-  ('ft', 'fort'),
-]]
-
-# Regular expression matching Japanese without punctuation marks:
-_japanese_characters = re.compile(r'[A-Za-z\d\u3005\u3040-\u30ff\u4e00-\u9fff\uff11-\uff19\uff21-\uff3a\uff41-\uff5a\uff66-\uff9d]')
-
-# Regular expression matching non-Japanese characters or punctuation marks:
-_japanese_marks = re.compile(r'[^A-Za-z\d\u3005\u3040-\u30ff\u4e00-\u9fff\uff11-\uff19\uff21-\uff3a\uff41-\uff5a\uff66-\uff9d]')
-
-
-# Tokenizer for Japanese
-tokenizer = Tokenizer()
-
-
-def expand_abbreviations(text):
-  for regex, replacement in _abbreviations:
-    text = re.sub(regex, replacement, text)
-  return text
-
-
-
-
-def lowercase(text):
-  return text.lower()
-
-
-def collapse_whitespace(text):
-  return re.sub(_whitespace_re, ' ', text)
-
-
-def convert_to_ascii(text):
-  return unidecode(text)
-
-
-def basic_cleaners(text):
-  '''Basic pipeline that lowercases and collapses whitespace without transliteration.'''
-  text = lowercase(text)
-  text = collapse_whitespace(text)
-  return text
-
-
-def transliteration_cleaners(text):
-  '''Pipeline for non-English text that transliterates to ASCII.'''
-  text = convert_to_ascii(text)
-  text = lowercase(text)
-  text = collapse_whitespace(text)
-  return text
-
+from text.japanese import japanese_to_romaji_with_accent, japanese_to_ipa, japanese_to_ipa2, japanese_to_ipa3
+# from text.korean import latin_to_hangul, number_to_hangul, divide_hangul, korean_to_lazy_ipa, korean_to_ipa
+from text.mandarin import number_to_chinese, chinese_to_bopomofo, latin_to_bopomofo, chinese_to_romaji, chinese_to_lazy_ipa, chinese_to_ipa, chinese_to_ipa2
+# from text.sanskrit import devanagari_to_ipa
+# from text.english import english_to_lazy_ipa, english_to_ipa2, english_to_lazy_ipa2
+# from text.thai import num_to_thai, latin_to_thai
+# from text.shanghainese import shanghainese_to_ipa
+# from text.cantonese import cantonese_to_ipa
+# from text.ngu_dialect import ngu_dialect_to_ipa
 
 
 def japanese_cleaners(text):
-  '''Pipeline for Japanese text.'''
-  sentences = re.split(_japanese_marks, text)
-  marks = re.findall(_japanese_marks, text)
-  text = ''
-  for i, mark in enumerate(marks):
-    if re.match(_japanese_characters, sentences[i]):
-      text += pyopenjtalk.g2p(sentences[i], kana=False).replace('pau','').replace(' ','')
-    text += unidecode(mark).replace(' ','')
-  if re.match(_japanese_characters, sentences[-1]):
-      text += pyopenjtalk.g2p(sentences[-1], kana=False).replace('pau','').replace(' ','')
-  if re.match('[A-Za-z]',text[-1]):
-    text += '.'
-  return text
+    text = japanese_to_romaji_with_accent(text)
+    if re.match('[A-Za-z]', text[-1]):
+        text += '.'
+    return text
 
 
-def japanese_tokenization_cleaners(text):
-  '''Pipeline for tokenizing Japanese text.'''
-  words = []
-  for token in tokenizer.tokenize(text):
-    if token.phonetic!='*':
-      words.append(token.phonetic)
-    else:
-      words.append(token.surface)
-  text = ''
-  for word in words:
-    if re.match(_japanese_characters, word):
-      if word[0] == '\u30fc':
-        continue
-      if len(text)>0:
-        text += ' '
-      text += pyopenjtalk.g2p(word, kana=False).replace(' ','')
-    else:
-      text += unidecode(word).replace(' ','')
-  if re.match('[A-Za-z]',text[-1]):
-    text += '.'
-  return text
+def japanese_cleaners2(text):
+    return japanese_cleaners(text).replace('ts', 'ʦ').replace('...', '…')
 
 
-def japanese_accent_cleaners(text):
-  '''Pipeline for notating accent in Japanese text.'''
-  '''Reference https://r9y9.github.io/ttslearn/latest/notebooks/ch10_Recipe-Tacotron.html'''
-  sentences = re.split(_japanese_marks, text)
-  marks = re.findall(_japanese_marks, text)
-  text = ''
-  for i, sentence in enumerate(sentences):
-    if re.match(_japanese_characters, sentence):
-      text += ':'
-      labels = pyopenjtalk.extract_fullcontext(sentence)
-      for n, label in enumerate(labels):
-        phoneme = re.search(r'\-([^\+]*)\+', label).group(1)
-        if phoneme not in ['sil','pau']:
-          text += phoneme
-        else:
-          continue
-        n_moras = int(re.search(r'/F:(\d+)_', label).group(1))
-        a1 = int(re.search(r"/A:(\-?[0-9]+)\+", label).group(1))
-        a2 = int(re.search(r"\+(\d+)\+", label).group(1))
-        a3 = int(re.search(r"\+(\d+)/", label).group(1))
-        if re.search(r'\-([^\+]*)\+', labels[n + 1]).group(1) in ['sil','pau']:
-          a2_next=-1
-        else:
-          a2_next = int(re.search(r"\+(\d+)\+", labels[n + 1]).group(1))
-        # Accent phrase boundary
-        if a3 == 1 and a2_next == 1:
-          text += ' '
-        # Falling
-        elif a1 == 0 and a2_next == a2 + 1 and a2 != n_moras:
-          text += ')'
-        # Rising
-        elif a2 == 1 and a2_next == 2:
-          text += '('
-    if i<len(marks):
-      text += unidecode(marks[i]).replace(' ','')
-  if re.match('[A-Za-z]',text[-1]):
-    text += '.'
-  return text
+def korean_cleaners(text):
+    '''Pipeline for Korean text'''
+    text = latin_to_hangul(text)
+    text = number_to_hangul(text)
+    text = divide_hangul(text)
+    if re.match('[\u3131-\u3163]', text[-1]):
+        text += '.'
+    return text
 
 
-def japanese_phrase_cleaners(text):
-  '''Pipeline for dividing Japanese text into phrases.'''
-  sentences = re.split(_japanese_marks, text)
-  marks = re.findall(_japanese_marks, text)
-  text = ''
-  for i, sentence in enumerate(sentences):
-    if re.match(_japanese_characters, sentence):
-      if text != '':
-        text += ' '
-      labels = pyopenjtalk.extract_fullcontext(sentence)
-      for n, label in enumerate(labels):
-        phoneme = re.search(r'\-([^\+]*)\+', label).group(1)
-        if phoneme not in ['sil','pau']:
-          text += phoneme
-        else:
-          continue
-        a3 = int(re.search(r"\+(\d+)/", label).group(1))
-        if re.search(r'\-([^\+]*)\+', labels[n + 1]).group(1) in ['sil','pau']:
-          a2_next=-1
-        else:
-          a2_next = int(re.search(r"\+(\d+)\+", labels[n + 1]).group(1))
-        # Accent phrase boundary
-        if a3 == 1 and a2_next == 1:
-          text += ' '
-    if i<len(marks):
-      text += unidecode(marks[i]).replace(' ','')
-  if re.match('[A-Za-z]',text[-1]):
-    text += '.'
-  return text
+def chinese_cleaners(text):
+    '''Pipeline for Chinese text'''
+    text = number_to_chinese(text)
+    text = chinese_to_bopomofo(text)
+    text = latin_to_bopomofo(text)
+    if re.match('[ˉˊˇˋ˙]', text[-1]):
+        text += '。'
+    return text
 
 
+def zh_ja_mixture_cleaners(text):
+    chinese_texts = re.findall(r'\[ZH\].*?\[ZH\]', text)
+    japanese_texts = re.findall(r'\[JA\].*?\[JA\]', text)
+    for chinese_text in chinese_texts:
+        cleaned_text = chinese_to_romaji(chinese_text[4:-4])
+        text = text.replace(chinese_text, cleaned_text+' ', 1)
+    for japanese_text in japanese_texts:
+        cleaned_text = japanese_to_romaji_with_accent(
+            japanese_text[4:-4]).replace('ts', 'ʦ').replace('u', 'ɯ').replace('...', '…')
+        text = text.replace(japanese_text, cleaned_text+' ', 1)
+    text = text[:-1]
+    if re.match('[A-Za-zɯɹəɥ→↓↑]', text[-1]):
+        text += '.'
+    return text
 
+
+def sanskrit_cleaners(text):
+    text = text.replace('॥', '।').replace('ॐ', 'ओम्')
+    if text[-1] != '।':
+        text += ' ।'
+    return text
+
+
+def cjks_cleaners(text):
+    chinese_texts = re.findall(r'\[ZH\].*?\[ZH\]', text)
+    japanese_texts = re.findall(r'\[JA\].*?\[JA\]', text)
+    korean_texts = re.findall(r'\[KO\].*?\[KO\]', text)
+    sanskrit_texts = re.findall(r'\[SA\].*?\[SA\]', text)
+    english_texts = re.findall(r'\[EN\].*?\[EN\]', text)
+    for chinese_text in chinese_texts:
+        cleaned_text = chinese_to_lazy_ipa(chinese_text[4:-4])
+        text = text.replace(chinese_text, cleaned_text+' ', 1)
+    for japanese_text in japanese_texts:
+        cleaned_text = japanese_to_ipa(japanese_text[4:-4])
+        text = text.replace(japanese_text, cleaned_text+' ', 1)
+    for korean_text in korean_texts:
+        cleaned_text = korean_to_lazy_ipa(korean_text[4:-4])
+        text = text.replace(korean_text, cleaned_text+' ', 1)
+    for sanskrit_text in sanskrit_texts:
+        cleaned_text = devanagari_to_ipa(sanskrit_text[4:-4])
+        text = text.replace(sanskrit_text, cleaned_text+' ', 1)
+    for english_text in english_texts:
+        cleaned_text = english_to_lazy_ipa(english_text[4:-4])
+        text = text.replace(english_text, cleaned_text+' ', 1)
+    text = text[:-1]
+    if re.match(r'[^\.,!\?\-…~]', text[-1]):
+        text += '.'
+    return text
+
+
+def cjke_cleaners(text):
+    chinese_texts = re.findall(r'\[ZH\].*?\[ZH\]', text)
+    japanese_texts = re.findall(r'\[JA\].*?\[JA\]', text)
+    korean_texts = re.findall(r'\[KO\].*?\[KO\]', text)
+    english_texts = re.findall(r'\[EN\].*?\[EN\]', text)
+    for chinese_text in chinese_texts:
+        cleaned_text = chinese_to_lazy_ipa(chinese_text[4:-4])
+        cleaned_text = cleaned_text.replace(
+            'ʧ', 'tʃ').replace('ʦ', 'ts').replace('ɥan', 'ɥæn')
+        text = text.replace(chinese_text, cleaned_text+' ', 1)
+    for japanese_text in japanese_texts:
+        cleaned_text = japanese_to_ipa(japanese_text[4:-4])
+        cleaned_text = cleaned_text.replace('ʧ', 'tʃ').replace(
+            'ʦ', 'ts').replace('ɥan', 'ɥæn').replace('ʥ', 'dz')
+        text = text.replace(japanese_text, cleaned_text+' ', 1)
+    for korean_text in korean_texts:
+        cleaned_text = korean_to_ipa(korean_text[4:-4])
+        text = text.replace(korean_text, cleaned_text+' ', 1)
+    for english_text in english_texts:
+        cleaned_text = english_to_ipa2(english_text[4:-4])
+        cleaned_text = cleaned_text.replace('ɑ', 'a').replace(
+            'ɔ', 'o').replace('ɛ', 'e').replace('ɪ', 'i').replace('ʊ', 'u')
+        text = text.replace(english_text, cleaned_text+' ', 1)
+    text = text[:-1]
+    if re.match(r'[^\.,!\?\-…~]', text[-1]):
+        text += '.'
+    return text
+
+
+def cjke_cleaners2(text):
+    chinese_texts = re.findall(r'\[ZH\].*?\[ZH\]', text)
+    japanese_texts = re.findall(r'\[JA\].*?\[JA\]', text)
+    korean_texts = re.findall(r'\[KO\].*?\[KO\]', text)
+    english_texts = re.findall(r'\[EN\].*?\[EN\]', text)
+    for chinese_text in chinese_texts:
+        cleaned_text = chinese_to_ipa(chinese_text[4:-4])
+        text = text.replace(chinese_text, cleaned_text+' ', 1)
+    for japanese_text in japanese_texts:
+        cleaned_text = japanese_to_ipa2(japanese_text[4:-4])
+        text = text.replace(japanese_text, cleaned_text+' ', 1)
+    for korean_text in korean_texts:
+        cleaned_text = korean_to_ipa(korean_text[4:-4])
+        text = text.replace(korean_text, cleaned_text+' ', 1)
+    for english_text in english_texts:
+        cleaned_text = english_to_ipa2(english_text[4:-4])
+        text = text.replace(english_text, cleaned_text+' ', 1)
+    text = text[:-1]
+    if re.match(r'[^\.,!\?\-…~]', text[-1]):
+        text += '.'
+    return text
+
+
+def thai_cleaners(text):
+    text = num_to_thai(text)
+    text = latin_to_thai(text)
+    return text
+
+
+def shanghainese_cleaners(text):
+    text = shanghainese_to_ipa(text)
+    if re.match(r'[^\.,!\?\-…~]', text[-1]):
+        text += '.'
+    return text
+
+
+def chinese_dialect_cleaners(text):
+    text = re.sub(r'\[MD\](.*?)\[MD\]',
+                  lambda x: chinese_to_ipa2(x.group(1))+' ', text)
+    text = re.sub(r'\[TW\](.*?)\[TW\]',
+                  lambda x: chinese_to_ipa2(x.group(1), True)+' ', text)
+    text = re.sub(r'\[JA\](.*?)\[JA\]',
+                  lambda x: japanese_to_ipa3(x.group(1)).replace('Q', 'ʔ')+' ', text)
+    text = re.sub(r'\[SH\](.*?)\[SH\]', lambda x: shanghainese_to_ipa(x.group(1)).replace('1', '˥˧').replace('5',
+                  '˧˧˦').replace('6', '˩˩˧').replace('7', '˥').replace('8', '˩˨').replace('ᴀ', 'ɐ').replace('ᴇ', 'e')+' ', text)
+    text = re.sub(r'\[GD\](.*?)\[GD\]',
+                  lambda x: cantonese_to_ipa(x.group(1))+' ', text)
+    text = re.sub(r'\[EN\](.*?)\[EN\]',
+                  lambda x: english_to_lazy_ipa2(x.group(1))+' ', text)
+    text = re.sub(r'\[([A-Z]{2})\](.*?)\[\1\]', lambda x: ngu_dialect_to_ipa(x.group(2), x.group(
+        1)).replace('ʣ', 'dz').replace('ʥ', 'dʑ').replace('ʦ', 'ts').replace('ʨ', 'tɕ')+' ', text)
+    text = re.sub(r'\s+$', '', text)
+    text = re.sub(r'([^\.,!\?\-…~])$', r'\1.', text)
+    return text
