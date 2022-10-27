@@ -1,4 +1,8 @@
-# VITS: Conditional Variational Autoencoder with Adversarial Learning for End-to-End Text-to-Speech
+# Emotional VITS
+
+在线demo[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/innnky/nene-emotion)
+
+数据集无需任何情感标注，通过[情感提取模型](https://github.com/audeering/w2v2-how-to) 提取语句情感embedding输入网络，实现情感可控的VITS合成
 
 ### Jaehyeon Kim, Jungil Kong, and Juhee Son
 
