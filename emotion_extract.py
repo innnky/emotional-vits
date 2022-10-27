@@ -55,7 +55,7 @@ class EmotionModel(Wav2Vec2PreTrainedModel):
 
 
 # load model from hub
-device = 'cuda'
+device = 'cuda' if torch.cuda.is_available() else "cpu"
 model_name = 'audeering/wav2vec2-large-robust-12-ft-emotion-msp-dim'
 processor = Wav2Vec2Processor.from_pretrained(model_name)
 model = EmotionModel.from_pretrained(model_name).to(device)
@@ -101,5 +101,12 @@ def extract_dir(path):
         wavnames.append(wavname)
         np.save(f"{rootpath}/{wavname}.emo.npy", emb.squeeze(0))
         print(idx, wavname)
-for spk in ["serena", "koni", "nyaru","shanoa", "mana"]:
-    extract_dir(f"dataset/{spk}")
+
+def extract_wav(path):
+    wav, sr = librosa.load(path, 16000)
+    emb = process_func(np.expand_dims(wav, 0), sr, embeddings=True)
+    return emb
+
+if __name__ == '__main__':
+    for spk in ["serena", "koni", "nyaru","shanoa", "mana"]:
+        extract_dir(f"dataset/{spk}")
