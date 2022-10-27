@@ -101,5 +101,5 @@ def extract_dir(path):
         wavnames.append(wavname)
         np.save(f"{rootpath}/{wavname}.emo.npy", emb.squeeze(0))
         print(idx, wavname)
-
-extract_dir(rootpath)
+for spk in ["serena", "koni", "nyaru","shanoa", "mana"]:
+    extract_dir(f"dataset/{spk}")
