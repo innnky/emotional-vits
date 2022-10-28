@@ -17,6 +17,8 @@
 + 由于在训练时候并没有指定情感的文本与embedding的对应关系，所有的情感特征embedding均在一个连续的空间内
 + 因此理论上对于任意角色数据集中出现的情感，推理时均可以通过该模型实现合成，只需要输入目标情感音频对应的embedding即可，而不会受到情感分类数量限制
 
+## 快速挑选各个情感对应的音频
+可以使用 **聚类算法** 自动对音频的情感embedding进行分类，大致上可以区分出**情感差异较大**的各个类别，具体使用请参考 [emotion_clustering.ipynb](emotion_clustering.ipynb)
 
 ## Pre-requisites
 0. Python >= 3.6
