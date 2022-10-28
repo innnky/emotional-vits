@@ -83,6 +83,8 @@ def process_func(
     y = y.detach().cpu().numpy()
 
     return y
+
+
 #
 #
 # def disp(rootpath, wavname):
@@ -92,21 +94,43 @@ def process_func(
 rootpath = "dataset/nene"
 embs = []
 wavnames = []
+
+
 def extract_dir(path):
     rootpath = path
     for idx, wavname in enumerate(os.listdir(rootpath)):
-        wav, sr =librosa.load(f"{rootpath}/{wavname}", 16000)
+        wav, sr = librosa.load(f"{rootpath}/{wavname}", 16000)
         emb = process_func(np.expand_dims(wav, 0), sr, embeddings=True)
         embs.append(emb)
         wavnames.append(wavname)
         np.save(f"{rootpath}/{wavname}.emo.npy", emb.squeeze(0))
         print(idx, wavname)
 
+
 def extract_wav(path):
     wav, sr = librosa.load(path, 16000)
     emb = process_func(np.expand_dims(wav, 0), sr, embeddings=True)
     return emb
 
+
+def preprocess_one(path):
+    wav, sr = librosa.load(path, 16000)
+    emb = process_func(np.expand_dims(wav, 0), sr, embeddings=True)
+    np.save(f"{path}.emo.npy", emb.squeeze(0))
+    return emb
+
+
 if __name__ == '__main__':
-    for spk in ["serena", "koni", "nyaru","shanoa", "mana"]:
-        extract_dir(f"dataset/{spk}")
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Emotion Extraction Preprocess')
+    parser.add_argument('--filelists', dest='filelists',nargs="+", type=str, help='path of the filelists')
+    args = parser.parse_args()
+
+    for filelist in args.filelists:
+        print(filelist,"----start emotion extract-------")
+        with open(filelist) as f:
+            for idx, line in enumerate(f.readlines()):
+                path, _, _ = line.strip().split("|")
+                preprocess_one(path)
+                print(idx, path)
