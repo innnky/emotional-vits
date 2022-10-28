@@ -54,7 +54,7 @@ def run(rank, n_gpus, hps):
   global global_step
   if rank == 0:
     logger = utils.get_logger(hps.model_dir)
-    print(hps) or logger.info(hps)
+    logger.info(hps)
     utils.check_git_hash(hps.model_dir)
     writer = SummaryWriter(log_dir=hps.model_dir)
     writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
@@ -203,7 +203,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
         logger.info('Train Epoch: {} [{:.0f}%]'.format(
           epoch,
           100. * batch_idx / len(train_loader)))
-        print([x.item() for x in losses] + [global_step, lr]) or logger.info([x.item() for x in losses] + [global_step, lr])
+        logger.info([x.item() for x in losses] + [global_step, lr])
         
         scalar_dict = {"loss/g/total": loss_gen_all, "loss/d/total": loss_disc_all, "learning_rate": lr, "grad_norm_d": grad_norm_d, "grad_norm_g": grad_norm_g}
         scalar_dict.update({"loss/g/fm": loss_fm, "loss/g/mel": loss_mel, "loss/g/dur": loss_dur, "loss/g/kl": loss_kl})
@@ -230,7 +230,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, schedulers, scaler, loade
     global_step += 1
   
   if rank == 0:
-    print('====> Epoch: {}'.format(epoch)) or logger.info('====> Epoch: {}'.format(epoch))
+    logger.info('====> Epoch: {}'.format(epoch))
 
  
 def evaluate(hps, generator, eval_loader, writer_eval):

@@ -32,15 +32,13 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
     try:
       new_state_dict[k] = saved_state_dict[k]
     except:
-      print("%s is not in the checkpoint" % k) or logger.info("%s is not in the checkpoint" % k)
+      logger.info("%s is not in the checkpoint" % k)
       new_state_dict[k] = v
   if hasattr(model, 'module'):
     model.module.load_state_dict(new_state_dict)
   else:
     model.load_state_dict(new_state_dict)
   logger.info("Loaded checkpoint '{}' (iteration {})" .format(
-    checkpoint_path, iteration))
-  print("Loaded checkpoint '{}' (iteration {}) " .format(
     checkpoint_path, iteration))
   return model, optimizer, learning_rate, iteration
 
@@ -52,8 +50,6 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
   if newest_step >= 1200:
     os.system(f"rm {last_ckptname}")
   logger.info("Saving model and optimizer state at iteration {} to {}".format(
-    iteration, checkpoint_path))
-  print("Saving model and optimizer state at iteration {} to {}".format(
     iteration, checkpoint_path))
   if hasattr(model, 'module'):
     state_dict = model.module.state_dict()
