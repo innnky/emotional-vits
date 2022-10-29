@@ -32,8 +32,8 @@
 cd monotonic_align
 python setup.py build_ext --inplace
 
-# Preprocessing (g2p) for your own datasets. Preprocessed phonemes for LJ Speech and VCTK have been already provided.
-python preprocess.py --text_index 2 --filelists filelists/vctk_audio_sid_text_train_filelist.txt filelists/vctk_audio_sid_text_val_filelist.txt filelists/vctk_audio_sid_text_test_filelist.txt
+# Preprocessing (g2p) for your own datasets. Preprocessed phonemes for nene have been already provided.
+python preprocess.py --text_index 2 --filelists filelists/train.txt filelists/val.txt
 
 
 ```
@@ -46,8 +46,12 @@ python emotion_extract.py --filelists filelists/train.txt filelists/val.txt
 ## Training Exmaple
 ```sh
 
-# VCTK
-python train_ms.py -c configs/vctk_base.json -m vctk_base
+# nene
+python train_ms.py -c configs/nene.json -m nene
+
+# if you are fine tuning pretrained original VITS checkpoint ,
+python train_ms.py -c configs/nene.json -m nene --ckptD /path/to/D_xxxx.pth --ckptG /path/to/G_xxxx.pth
+
 ```
 
 

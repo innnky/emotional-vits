@@ -15,6 +15,31 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging
 
 
+def load_old_checkpoint(checkpoint_path, model, optimizer=None):
+  assert os.path.isfile(checkpoint_path)
+  checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
+  iteration = checkpoint_dict['iteration']
+  learning_rate = checkpoint_dict['learning_rate']
+  saved_state_dict = checkpoint_dict['model']
+  if hasattr(model, 'module'):
+    state_dict = model.module.state_dict()
+  else:
+    state_dict = model.state_dict()
+  new_state_dict= {}
+  for k, v in state_dict.items():
+    try:
+      new_state_dict[k] = saved_state_dict[k]
+    except:
+      logger.info("%s is not in the checkpoint" % k)
+      new_state_dict[k] = v
+  if hasattr(model, 'module'):
+    model.module.load_state_dict(new_state_dict)
+  else:
+    model.load_state_dict(new_state_dict)
+  logger.info("Loaded checkpoint '{}' (iteration {})" .format(
+    checkpoint_path, iteration))
+  return model, optimizer, learning_rate, iteration
+
 def load_checkpoint(checkpoint_path, model, optimizer=None):
   assert os.path.isfile(checkpoint_path)
   checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
@@ -152,7 +177,10 @@ def get_hparams(init=True):
                       help='JSON file for configuration')
   parser.add_argument('-m', '--model', type=str, required=True,
                       help='Model name')
-  
+  parser.add_argument('--ckptG', type=str, required=False,
+                      help='original VITS G checkpoint path')
+  parser.add_argument('--ckptD', type=str, required=False,
+                      help='original VITS D checkpoint path')
   args = parser.parse_args()
   model_dir = os.path.join("./logs", args.model)
 
@@ -173,6 +201,9 @@ def get_hparams(init=True):
   
   hparams = HParams(**config)
   hparams.model_dir = model_dir
+  hparams.ckptG = args.ckptG
+  hparams.ckptD = args.ckptD
+
   return hparams
 
 
