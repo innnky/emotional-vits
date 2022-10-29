@@ -5,7 +5,9 @@
 在线demo ↑↑↑  [bilibili demo](https://www.bilibili.com/video/BV1Vg411h7of)
 
 数据集无需任何情感标注，通过[情感提取模型](https://github.com/audeering/w2v2-how-to) 提取语句情感embedding输入网络，实现情感可控的VITS合成
-
+## 模型结构
++ 相对于原版VITS仅修改了TextEncoder部分
+<img src="resources/out.png" alt="VITS at training" height="400"></td>
 ## 模型的优缺点介绍
 该模型缺点：
 + 推理时需要指定一个音频作为情感的**参考音频**才能够合成音频，而模型本身**并不知道**“激动”、“平静”这类表示情绪的词语对应的情感特征是什么。
