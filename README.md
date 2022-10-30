@@ -59,4 +59,4 @@ python train_ms.py -c configs/nene.json -m nene --ckptD /path/to/D_xxxx.pth --ck
 
 
 ## Inference Example
-See [inference.ipynb](inference.ipynb)
+See [inference.ipynb](inference.ipynb) or use [MoeGoe](https://github.com/CjangCjengh/MoeGoe)
