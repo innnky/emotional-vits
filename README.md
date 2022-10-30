@@ -36,13 +36,13 @@ cd monotonic_align
 python setup.py build_ext --inplace
 
 # Preprocessing (g2p) for your own datasets. Preprocessed phonemes for nene have been already provided.
-python preprocess.py --text_index 2 --filelists filelists/train.txt filelists/val.txt
+python preprocess.py --text_index 2 --filelists filelists/train.txt filelists/val.txt --text_cleaners zh_ja_mixture_cleaners
 
 
 ```
 5. extract emotional embeddings, this will generate *.emo.npy for each wav file.
 ```sh
-python emotion_extract.py --filelists filelists/train.txt filelists/val.txt --text_cleaners zh_ja_mixture_cleaners
+python emotion_extract.py --filelists filelists/train.txt filelists/val.txt
 ```
 
 
