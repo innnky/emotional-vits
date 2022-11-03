@@ -2,7 +2,7 @@
 
 [//]: # ([![Hugging Face Spaces]&#40;https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue&#41;]&#40;https://huggingface.co/spaces/innnky/nene-emotion&#41; )
 
-[bilibili demo](https://www.bilibili.com/video/BV1Vg411h7of)
+[bilibili demo](https://www.bilibili.com/video/BV1Me4y1m7aT/)
 
 数据集无需任何情感标注，通过[情感提取模型](https://github.com/audeering/w2v2-how-to) 提取语句情感logits输入网络，实现情感可控的VITS合成
 ## 模型结构
@@ -45,7 +45,7 @@ python emotion_extract.py --filelists filelists/train.txt filelists/val.txt --em
 ```sh
 
 # nene
-python train_ms.py -c configs/nene.json -m nene
+python train_ms.py -c configs/nene.json -m nene  --emotion-type logits
 
 # if you are fine tuning pretrained original VITS checkpoint ,
 python train_ms.py -c configs/nene.json -m nene --emotion-type logits --ckptD /path/to/D_xxxx.pth --ckptG /path/to/G_xxxx.pth
@@ -54,4 +54,4 @@ python train_ms.py -c configs/nene.json -m nene --emotion-type logits --ckptD /p
 
 
 ## Inference Example
-See [inference-logits.ipynb](inference.ipynb) 
+See [inference-logits.ipynb](inference-logits.ipynb) 
