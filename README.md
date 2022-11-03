@@ -1,29 +1,24 @@
 # Emotional VITS
 
-[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/innnky/nene-emotion) 
+[//]: # ([![Hugging Face Spaces]&#40;https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue&#41;]&#40;https://huggingface.co/spaces/innnky/nene-emotion&#41; )
 
-在线demo ↑↑↑  [bilibili demo](https://www.bilibili.com/video/BV1Vg411h7of)
+[bilibili demo](https://www.bilibili.com/video/BV1Vg411h7of)
 
-数据集无需任何情感标注，通过[情感提取模型](https://github.com/audeering/w2v2-how-to) 提取语句情感embedding输入网络，实现情感可控的VITS合成
+数据集无需任何情感标注，通过[情感提取模型](https://github.com/audeering/w2v2-how-to) 提取语句情感logits输入网络，实现情感可控的VITS合成
 ## 模型结构
-+ 相对于原版VITS仅修改了TextEncoder部分
-![image-20221029104949567](resources/out.png)
++ 将情感embedding（1024维）替换为logits（3维）输入模型，由于logits仅包含arousal, dominance, valence 三个值，因此可以手动调整值进行合成，而不需要使用参考音频提取emb做情感参考
 
-## 模型的优缺点介绍
-该模型缺点：
-+ 推理时需要指定一个音频作为情感的**参考音频**才能够合成音频，而模型本身**并不知道**“激动”、“平静”这类表示情绪的词语对应的情感特征是什么。
-+ 对于只有一个角色的模型，可以通过**预先筛选**的方式，即手动挑选几条“激动”、“平静”、“小声”之类的音频，手动实现情感文本->情感embedding的对应关系 （这个过程可以用[聚类算法](emotion_clustering.ipynb)
-简化筛选）
-+ 对于有**多个角色**的模型，上述预筛选的方式有**局限性**，因为例如同样对于“平静”这一个情感而言，不同角色对应的情感embedding可能会不同，导致建立情感文本->情感embedding的映射关系很繁琐，很难通过一套统一的标准去描述不同角色之间的相似情感
+## 相较于输入embedding的优缺点介绍
+使用logits控制情感的优点：
++ 推理更加易用，只需要手动设置三个参数即可，不需要参考音频，例如arousal参数控制情感强度，取值0-1，1则为最强烈的情感，0为最轻柔的情感
++ 由于不需要指定参考音频，因此做多说话人的模型会方便很多，可以有统一的参数控制不同说话人的情感
 
-该模型的优点：
-+ **任何**普通的TTS数据集均可以完成情感控制。**无需**手动打情感标签。
-+ 由于在训练时候并没有指定情感的文本与embedding的对应关系，所有的情感特征embedding均在一个连续的空间内
-+ 因此理论上对于任意角色数据集中出现的情感，推理时均可以通过该模型实现合成，只需要输入目标情感音频对应的embedding即可，而不会受到情感分类数量限制
+使用logits控制情感的缺点：
++ 只有3个参数可以控制，无法精确的还原所需要的情感
++ 除了arousal参数控制情感的强度效果明显，另外两个参数感觉控制性比较弱，修改参数后合成出来效果没啥区别
 
-## 快速挑选各个情感对应的音频
-可以使用 **聚类算法** 自动对音频的情感embedding进行分类，大致上可以区分出**情感差异较大**的各个类别，具体使用请参考 [emotion_clustering.ipynb](emotion_clustering.ipynb)
-
+## 注意事项
++ 模型预处理（提取情感）和训练时都需要指定--emotion-type logits
 ## Pre-requisites
 0. Python >= 3.6
 0. Clone this repository
@@ -40,9 +35,9 @@ python preprocess.py --text_index 2 --filelists filelists/train.txt filelists/va
 
 
 ```
-5. extract emotional embeddings, this will generate *.emo.npy for each wav file.
+5. extract emotional embeddings, this will generate *.logits.npy for each wav file.
 ```sh
-python emotion_extract.py --filelists filelists/train.txt filelists/val.txt
+python emotion_extract.py --filelists filelists/train.txt filelists/val.txt --emotion-type logits
 ```
 
 
@@ -53,10 +48,10 @@ python emotion_extract.py --filelists filelists/train.txt filelists/val.txt
 python train_ms.py -c configs/nene.json -m nene
 
 # if you are fine tuning pretrained original VITS checkpoint ,
-python train_ms.py -c configs/nene.json -m nene --ckptD /path/to/D_xxxx.pth --ckptG /path/to/G_xxxx.pth
+python train_ms.py -c configs/nene.json -m nene --emotion-type logits --ckptD /path/to/D_xxxx.pth --ckptG /path/to/G_xxxx.pth
 
 ```
 
 
 ## Inference Example
-See [inference.ipynb](inference.ipynb) or use [MoeGoe](https://github.com/CjangCjengh/MoeGoe)
+See [inference-logits.ipynb](inference.ipynb) 
