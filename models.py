@@ -133,7 +133,7 @@ class DurationPredictor(nn.Module):
 
 
 class TextEncoder(nn.Module):
-  def __init__(self,
+  def __init__(self,emotionType,
       n_vocab,
       out_channels,
       hidden_channels,
@@ -153,8 +153,12 @@ class TextEncoder(nn.Module):
     self.p_dropout = p_dropout
 
     self.emb = nn.Embedding(n_vocab, hidden_channels)
-    self.emo_proj = nn.Linear(1024, hidden_channels)
-
+    self.emotionType = emotionType
+    if self.emotionType == "embedding":
+        self.emo_proj = nn.Linear(1024, hidden_channels)
+    elif self.emotionType == "logits":
+        self.logits_proj = nn.Linear(3, hidden_channels)
+        
     nn.init.normal_(self.emb.weight, 0.0, hidden_channels**-0.5)
 
     self.encoder = attentions.Encoder(
@@ -168,7 +172,11 @@ class TextEncoder(nn.Module):
 
   def forward(self, x, x_lengths, emo):
     x = self.emb(x) * math.sqrt(self.hidden_channels) # [b, t, h]
-    x = x + self.emo_proj(emo.unsqueeze(1))
+    if self.emotionType == "embedding":
+        x = x + self.emo_proj(emo.unsqueeze(1))
+    elif self.emotionType == "logits":
+        x = x + self.logits_proj(emo.unsqueeze(1))
+        
     x = torch.transpose(x, 1, -1) # [b, h, t]
     x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
 
@@ -413,6 +421,7 @@ class SynthesizerTrn(nn.Module):
     upsample_initial_channel, 
     upsample_kernel_sizes,
     n_speakers=0,
+    emotionType="embedding",
     gin_channels=0,
     use_sdp=True,
     **kwargs):
@@ -439,7 +448,7 @@ class SynthesizerTrn(nn.Module):
 
     self.use_sdp = use_sdp
 
-    self.enc_p = TextEncoder(n_vocab,
+    self.enc_p = TextEncoder(emotionType, n_vocab,
         inter_channels,
         hidden_channels,
         filter_channels,

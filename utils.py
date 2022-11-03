@@ -181,6 +181,8 @@ def get_hparams(init=True):
                       help='original VITS G checkpoint path')
   parser.add_argument('--ckptD', type=str, required=False,
                       help='original VITS D checkpoint path')
+  parser.add_argument('--emotion-type', type=str, required=True,dest="emotionType",
+                      help='embedding or logits')
   args = parser.parse_args()
   model_dir = os.path.join("./logs", args.model)
 
@@ -203,7 +205,7 @@ def get_hparams(init=True):
   hparams.model_dir = model_dir
   hparams.ckptG = args.ckptG
   hparams.ckptD = args.ckptD
-
+  hparams.emotionType = args.emotionType
   return hparams
 
 

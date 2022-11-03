@@ -17,7 +17,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         2) normalizes text and converts them to sequences of integers
         3) computes spectrograms from audio files.
     """
-    def __init__(self, audiopaths_sid_text, hparams):
+    def __init__(self, audiopaths_sid_text, hparams, emotionType):
         self.audiopaths_sid_text = load_filepaths_and_text(audiopaths_sid_text)
         self.text_cleaners = hparams.text_cleaners
         self.max_wav_value = hparams.max_wav_value
@@ -26,6 +26,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         self.hop_length     = hparams.hop_length
         self.win_length     = hparams.win_length
         self.sampling_rate  = hparams.sampling_rate
+        self.emotionType = emotionType
 
         self.cleaned_text = getattr(hparams, "cleaned_text", False)
 
@@ -60,7 +61,11 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         text = self.get_text(text)
         spec, wav = self.get_audio(audiopath)
         sid = self.get_sid(sid)
-        emo = torch.FloatTensor(np.load(audiopath+".emo.npy"))
+        if self.emotionType == "embedding":
+            emo = torch.FloatTensor(np.load(audiopath+".emo.npy"))
+        elif self.emotionType == "logits":
+            emo = torch.FloatTensor(np.load(audiopath+".logits.npy"))
+            
         return (text, spec, wav, sid, emo)
 
     def get_audio(self, filename):
@@ -131,7 +136,7 @@ class TextAudioSpeakerCollate():
         text_padded = torch.LongTensor(len(batch), max_text_len)
         spec_padded = torch.FloatTensor(len(batch), batch[0][1].size(0), max_spec_len)
         wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)
-        emo = torch.FloatTensor(len(batch), 1024)
+        emo = torch.FloatTensor(len(batch), batch[0][-1].size(0))
 
         text_padded.zero_()
         spec_padded.zero_()

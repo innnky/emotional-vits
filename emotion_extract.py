@@ -109,28 +109,39 @@ def extract_dir(path):
 
 def extract_wav(path):
     wav, sr = librosa.load(path, 16000)
-    emb = process_func(np.expand_dims(wav, 0), sr, embeddings=True)
+    emb = process_func(np.expand_dims(wav, 0), sr)
     return emb
 
 
-def preprocess_one(path):
+def preprocess_one(path,embeddings):
     wav, sr = librosa.load(path, 16000)
-    emb = process_func(np.expand_dims(wav, 0), sr, embeddings=True)
-    np.save(f"{path}.emo.npy", emb.squeeze(0))
+    emb = process_func(np.expand_dims(wav, 0), sr, embeddings=embeddings)
+    if embeddings:
+        np.save(f"{path}.emo.npy", emb.squeeze(0))
+    else :
+        np.save(f"{path}.logits.npy", emb.squeeze(0))
     return emb
+
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description='Emotion Extraction Preprocess')
-    parser.add_argument('--filelists', dest='filelists',nargs="+", type=str, help='path of the filelists')
+    parser.add_argument('--filelists', required=True,dest='filelists',nargs="+", type=str, help='path of the filelists')
+    parser.add_argument('--emotion-type', type=str, required=True,dest="emotionType",
+                      help='embedding or logits')
     args = parser.parse_args()
-
+    assert args.emotionType in ["embedding", "logits"]
     for filelist in args.filelists:
         print(filelist,"----start emotion extract-------")
         with open(filelist) as f:
             for idx, line in enumerate(f.readlines()):
                 path, _, _ = line.strip().split("|")
-                preprocess_one(path)
+                if args.emotionType == "embedding":
+                    preprocess_one(path, True)
+                elif args.emotionType == "logits":
+                    preprocess_one(path, False)
+                
                 print(idx, path)
+                
