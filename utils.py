@@ -69,11 +69,6 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
 
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
-  ckptname = checkpoint_path.split("/")[-1]
-  newest_step = int(ckptname.split(".")[0].split("_")[1])
-  last_ckptname = checkpoint_path.replace(str(newest_step), str(newest_step-1200))
-  if newest_step >= 1200:
-    os.system(f"rm {last_ckptname}")
   logger.info("Saving model and optimizer state at iteration {} to {}".format(
     iteration, checkpoint_path))
   if hasattr(model, 'module'):
