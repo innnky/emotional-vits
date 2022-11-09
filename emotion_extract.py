@@ -131,6 +131,6 @@ if __name__ == '__main__':
         print(filelist,"----start emotion extract-------")
         with open(filelist) as f:
             for idx, line in enumerate(f.readlines()):
-                path, _, _ = line.strip().split("|")
+                path = line.strip().split("|")[0]
                 preprocess_one(path)
                 print(idx, path)
